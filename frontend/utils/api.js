@@ -1,4 +1,6 @@
-const DEFAULT_BASE_URL = 'http://127.0.0.1:3000'
+const { API_BASE_URL } = require('../config')
+
+const DEFAULT_BASE_URL = API_BASE_URL
 
 function normalizeBaseUrl(value) {
   return String(value || DEFAULT_BASE_URL).replace(/\/+$/, '')
@@ -52,7 +54,7 @@ function request(options) {
         reject(new Error(message))
       },
       fail() {
-        reject(new Error('无法连接到后端服务，请先启动 Node.js 服务并确认接口地址可访问。'))
+        reject(new Error('无法连接到后端服务，请确认服务器地址、端口以及微信小程序 request 合法域名配置。'))
       }
     })
   })

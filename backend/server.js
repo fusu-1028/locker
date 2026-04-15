@@ -1,23 +1,16 @@
 const express = require('express');
 const crypto = require('node:crypto');
 const mysql = require('mysql2/promise');
+const { database: DB_CONFIG, server: SERVER_CONFIG } = require('./config');
 
-const PORT = Number(process.env.PORT || 3000);
+const HOST = SERVER_CONFIG.host;
+const PORT = SERVER_CONFIG.port;
+const CORS_ORIGIN = SERVER_CONFIG.corsOrigin;
 const CABINET_NO = 1;
 const DEFAULT_RECORD_LIMIT = 12;
-const DB_CONFIG = {
-  host: process.env.MYSQL_HOST || '127.0.0.1',
-  port: Number(process.env.MYSQL_PORT || 3306),
-  user: process.env.MYSQL_USER || 'root',
-  password: process.env.MYSQL_PASSWORD || '12203990708',
-  database: process.env.MYSQL_DATABASE || 'smart_locker',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  dateStrings: true
-};
+
 const MESSAGES = {
-  invalidPhone: '请输入有效的 11 位手机号码。',
+  invalidPhone: '请输入有效的 11 位手机号。',
   invalidPickupCode: '请输入有效的 6 位取件码。',
   cabinetOccupied: '当前柜门已被占用，请先完成取件。',
   pickupCodeGenerationFailed: '取件码生成失败，请稍后重试。',
@@ -30,7 +23,7 @@ const MESSAGES = {
   recordsOk: '操作记录加载成功。',
   storeOk: '存件成功，已生成取件码。',
   takeOk: '已查询到取件信息，请在柜体键盘输入验证码。',
-  verifyOk: '验证码校验成功，柜门已解锁。',
+  verifyOk: '取件码校验成功，柜门已解锁。',
   hardwareVerifyOk: '硬件验证码校验成功，已下发开锁指令。',
   serverError: '服务器内部错误，请稍后重试。'
 };
@@ -41,6 +34,47 @@ class AppError extends Error {
     this.name = 'AppError';
     this.statusCode = statusCode;
   }
+}
+
+function logInfo(message) {
+  console.log(`[startup] ${message}`);
+}
+
+function logWarn(message) {
+  console.warn(`[startup] ${message}`);
+}
+
+function buildErrorMessage(error) {
+  const details = [];
+
+  if (error.code) {
+    details.push(`code=${error.code}`);
+  }
+
+  if (error.errno) {
+    details.push(`errno=${error.errno}`);
+  }
+
+  if (error.address || error.port) {
+    details.push(`target=${error.address || DB_CONFIG.host}:${error.port || DB_CONFIG.port}`);
+  }
+
+  if (error.sqlMessage) {
+    details.push(error.sqlMessage);
+  } else if (error.message) {
+    details.push(error.message);
+  }
+
+  return details.join(' | ');
+}
+
+function wrapStartupError(message, error) {
+  return new Error(`${message}: ${buildErrorMessage(error)}`, { cause: error });
+}
+
+function getDisplayServerUrl() {
+  const displayHost = HOST === '0.0.0.0' ? 'SERVER_IP_OR_DOMAIN' : HOST;
+  return `http://${displayHost}:${PORT}`;
 }
 
 function normalizePhone(phone) {
@@ -124,52 +158,84 @@ function buildCabinetState(parcel) {
 }
 
 async function ensureDatabaseReady() {
-  const adminConnection = await mysql.createConnection({
-    host: DB_CONFIG.host,
-    port: DB_CONFIG.port,
-    user: DB_CONFIG.user,
-    password: DB_CONFIG.password
-  });
+  logInfo(
+    `Preparing MySQL connection ${DB_CONFIG.user}@${DB_CONFIG.host}:${DB_CONFIG.port}/${DB_CONFIG.database}`
+  );
+
+  let adminConnection = null;
 
   try {
+    adminConnection = await mysql.createConnection({
+      host: DB_CONFIG.host,
+      port: DB_CONFIG.port,
+      user: DB_CONFIG.user,
+      password: DB_CONFIG.password
+    });
+
     const databaseName = escapeIdentifier(DB_CONFIG.database);
     await adminConnection.query(
       `CREATE DATABASE IF NOT EXISTS \`${databaseName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
     );
+    logInfo(`Database ensured: ${DB_CONFIG.database}`);
+  } catch (error) {
+    const permissionErrors = new Set([
+      'ER_DBACCESS_DENIED_ERROR',
+      'ER_SPECIFIC_ACCESS_DENIED_ERROR'
+    ]);
+
+    if (permissionErrors.has(error.code)) {
+      logWarn(
+        `MySQL user ${DB_CONFIG.user} cannot create databases automatically. ` +
+        `Will continue and try to use existing database ${DB_CONFIG.database}.`
+      );
+    } else {
+      throw wrapStartupError('Failed to connect to MySQL before initialization', error);
+    }
   } finally {
-    await adminConnection.end();
+    if (adminConnection) {
+      await adminConnection.end().catch(() => {});
+    }
   }
 
   const pool = mysql.createPool(DB_CONFIG);
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS parcels (
-      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-      phone VARCHAR(20) NOT NULL COMMENT '用户预留手机号',
-      pickup_code CHAR(6) NOT NULL UNIQUE COMMENT '六位取件码',
-      cabinet_no TINYINT UNSIGNED NOT NULL DEFAULT 1 UNIQUE COMMENT '柜门编号，当前为单柜模式',
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='当前柜门中的待取件包裹'
-  `);
+  try {
+    await pool.query('SELECT 1');
+    logInfo('MySQL connection established.');
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS parcel_records (
-      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-      parcel_id BIGINT UNSIGNED NULL COMMENT '原包裹主键，删除后仅作为日志保留',
-      action ENUM('store', 'pickup') NOT NULL COMMENT '业务动作',
-      phone VARCHAR(20) NOT NULL COMMENT '用户手机号',
-      pickup_code CHAR(6) NOT NULL COMMENT '六位取件码快照',
-      cabinet_no TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '柜门编号',
-      source VARCHAR(20) NOT NULL DEFAULT 'miniapp' COMMENT '触发来源：miniapp/hardware/debug',
-      note VARCHAR(255) NOT NULL DEFAULT '' COMMENT '本次动作说明',
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_records_created_at (created_at),
-      INDEX idx_records_phone (phone)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能快递柜操作流水'
-  `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS parcels (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        phone VARCHAR(20) NOT NULL COMMENT 'User phone number',
+        pickup_code CHAR(6) NOT NULL UNIQUE COMMENT '6-digit pickup code',
+        cabinet_no TINYINT UNSIGNED NOT NULL DEFAULT 1 UNIQUE COMMENT 'Cabinet number',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Current parcels waiting for pickup'
+    `);
 
-  return pool;
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS parcel_records (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        parcel_id BIGINT UNSIGNED NULL COMMENT 'Historical parcel id',
+        action ENUM('store', 'pickup') NOT NULL COMMENT 'Business action',
+        phone VARCHAR(20) NOT NULL COMMENT 'User phone number',
+        pickup_code CHAR(6) NOT NULL COMMENT '6-digit pickup code snapshot',
+        cabinet_no TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Cabinet number',
+        source VARCHAR(20) NOT NULL DEFAULT 'miniapp' COMMENT 'Request source: miniapp/hardware/debug',
+        note VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'Business note',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_records_created_at (created_at),
+        INDEX idx_records_phone (phone)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Locker operation history'
+    `);
+
+    logInfo('MySQL tables ensured.');
+    return pool;
+  } catch (error) {
+    await pool.end().catch(() => {});
+    throw wrapStartupError(`Failed to initialize database ${DB_CONFIG.database}`, error);
+  }
 }
 
 function asyncHandler(handler) {
@@ -288,6 +354,7 @@ async function createLockerService() {
 
       return {
         database: DB_CONFIG.database,
+        databaseHost: DB_CONFIG.host,
         cabinet: buildCabinetState(parcel),
         recordSummary
       };
@@ -305,10 +372,10 @@ async function createLockerService() {
         summary,
         recentRecords,
         flow: [
-          '小程序录入手机号并提交存件请求',
-          '后端写入数据库并生成随机六位取件码',
-          '用户取件时先输入手机号查询对应验证码',
-          'STM32/ESP8266 上传键盘验证码，校验成功后驱动继电器开锁'
+          '小程序录入手机号并提交存件请求。',
+          '后端写入数据库并生成随机六位取件码。',
+          '用户取件时先输入手机号查询待取件信息。',
+          'STM32 或 ESP8266 上传键盘验证码，校验成功后驱动继电器开锁。'
         ]
       };
     },
@@ -379,7 +446,7 @@ async function createLockerService() {
           pickupCode: parcel.pickupCode,
           cabinetNo: parcel.cabinetNo,
           source: 'miniapp',
-          note: '用户已完成存件，等待柜门关闭与上锁。'
+          note: '用户已完成存件，等待柜门关闭并上锁。'
         });
 
         await connection.commit();
@@ -387,7 +454,7 @@ async function createLockerService() {
         return {
           ...parcel,
           cabinetStatus: 'occupied',
-          instruction: '请提醒用户保存六位取件码，取件时需在柜体触摸键盘输入。'
+          instruction: '请提醒用户保存六位取件码，取件时需要在柜体键盘输入。'
         };
       } catch (error) {
         await connection.rollback();
@@ -427,7 +494,7 @@ async function createLockerService() {
         ...parcel,
         cabinetStatus: 'occupied',
         pickupStage: 'keyboard_verification',
-        instruction: '请前往柜体触摸键盘输入下方六位取件码，硬件校验通过后自动开锁。',
+        instruction: '请前往柜体触摸键盘输入下方六位取件码，硬件校验通过后会自动开锁。',
         hardwareEndpoint: '/api/hardware/verify-pickup'
       };
     },
@@ -495,7 +562,7 @@ async function createLockerService() {
             action: 'open',
             cabinetNo: parcel.cabinetNo
           },
-          message: '验证码校验成功，允许柜门打开。'
+          message: '取件码校验成功，允许柜门打开。'
         };
       } catch (error) {
         await connection.rollback();
@@ -510,9 +577,31 @@ async function createLockerService() {
   };
 }
 
+function applyCors(app) {
+  app.use((req, res, next) => {
+    if (CORS_ORIGIN === '*') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', CORS_ORIGIN);
+      res.setHeader('Vary', 'Origin');
+    }
+
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(204);
+    }
+
+    next();
+  });
+}
+
 function createApp(service) {
   const app = express();
 
+  app.disable('x-powered-by');
+  applyCors(app);
   app.use(express.json({ limit: '1mb' }));
 
   app.get('/health', asyncHandler(async (req, res) => {
@@ -591,35 +680,81 @@ function createApp(service) {
       return res.status(error.statusCode).json({ message: error.message });
     }
 
-    console.error(error);
+    console.error(`[error] ${req.method} ${req.originalUrl}: ${buildErrorMessage(error)}`);
     return res.status(500).json({ message: MESSAGES.serverError });
   });
 
   return app;
 }
 
-async function startServer() {
-  const service = await createLockerService();
-  const app = createApp(service);
-  const server = app.listen(PORT, () => {
-    console.log(`Smart locker server is listening on http://localhost:${PORT}`);
-    console.log(`MySQL database: ${DB_CONFIG.database}`);
+function listenAsync(app) {
+  return new Promise((resolve, reject) => {
+    const server = app.listen(PORT, HOST, () => resolve(server));
+    server.once('error', reject);
   });
+}
 
-  const shutdown = async () => {
-    await service.close();
-    server.close();
+function registerShutdownHandlers(server, service) {
+  let isShuttingDown = false;
+
+  const shutdown = async (signal) => {
+    if (isShuttingDown) {
+      return;
+    }
+
+    isShuttingDown = true;
+    logInfo(`Received ${signal}, shutting down...`);
+
+    await service.close().catch((error) => {
+      console.error(`[shutdown] Failed to close MySQL pool: ${buildErrorMessage(error)}`);
+    });
+
+    await new Promise((resolve) => {
+      server.close(() => resolve());
+    });
+
+    logInfo('Shutdown complete.');
   };
 
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', () => {
+    void shutdown('SIGINT');
+  });
 
-  return { app, service, server };
+  process.on('SIGTERM', () => {
+    void shutdown('SIGTERM');
+  });
+}
+
+async function startServer() {
+  logInfo('Starting smart locker backend...');
+
+  const service = await createLockerService();
+  const app = createApp(service);
+
+  try {
+    const server = await listenAsync(app);
+    registerShutdownHandlers(server, service);
+
+    logInfo(`HTTP server listening on ${HOST}:${PORT}`);
+    logInfo(`Public access URL: ${getDisplayServerUrl()}`);
+    logInfo(`CORS origin: ${CORS_ORIGIN}`);
+    logInfo(`MySQL database: ${DB_CONFIG.database}`);
+
+    return { app, service, server };
+  } catch (error) {
+    await service.close().catch(() => {});
+    throw wrapStartupError('Failed to start HTTP server', error);
+  }
 }
 
 if (require.main === module) {
   startServer().catch((error) => {
-    console.error('Failed to start server:', error);
+    console.error(`[startup] ${error.message}`);
+
+    if (process.env.NODE_ENV !== 'production' && error.cause && error.cause.stack) {
+      console.error(error.cause.stack);
+    }
+
     process.exit(1);
   });
 }
