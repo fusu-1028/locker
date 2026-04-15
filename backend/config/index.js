@@ -1,7 +1,7 @@
 const path = require('node:path');
 const dotenv = require('dotenv');
 
-dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
+dotenv.config({ path: path.resolve(__dirname, '..', '.env'), quiet: true });
 
 function pickEnv(...values) {
   for (const value of values) {
@@ -36,7 +36,33 @@ const database = {
   dateStrings: true
 };
 
+const locker = {
+  cabinetNo: 1,
+  defaultRecordLimit: 12
+};
+
+const messages = {
+  invalidPhone: '请输入有效的 11 位手机号。',
+  invalidPickupCode: '请输入有效的 6 位取件码。',
+  cabinetOccupied: '当前柜门已被占用，请先完成取件。',
+  pickupCodeGenerationFailed: '取件码生成失败，请稍后重试。',
+  parcelNotFoundByPhone: '未查询到该手机号对应的待取件信息。',
+  parcelNotFoundByCode: '取件码不存在或已失效。',
+  healthOk: '智能快递柜服务运行正常。',
+  dashboardOk: '联调看板加载成功。',
+  cabinetOk: '柜体状态加载成功。',
+  parcelListOk: '当前包裹数据加载成功。',
+  recordsOk: '操作记录加载成功。',
+  storeOk: '存件成功，已生成取件码。',
+  takeOk: '已查询到取件信息，请在柜体键盘输入验证码。',
+  verifyOk: '取件码校验成功，柜门已解锁。',
+  hardwareVerifyOk: '硬件验证码校验成功，已下发开锁指令。',
+  serverError: '服务器内部错误，请稍后重试。'
+};
+
 module.exports = {
   server,
-  database
+  database,
+  locker,
+  messages
 };
