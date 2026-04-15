@@ -1,0 +1,53 @@
+.take-actions {
+  margin-top: 18rpx;
+}
+
+.pickup-code-panel {
+  padding: 28rpx 24rpx;
+  margin-bottom: 18rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(145deg, #173042, #1e7b73);
+  color: #f5fbff;
+}
+
+.code-label {
+  display: block;
+  font-size: 22rpx;
+  letter-spacing: 4rpx;
+  opacity: 0.8;
+}
+
+.code-value {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 64rpx;
+  letter-spacing: 10rpx;
+  font-weight: 700;
+  text-align: center;
+}
+
+.debug-card {
+  margin-top: 18rpx;
+  padding: 24rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(145deg, #e5f0f7, #f8fbfd);
+}
+
+.debug-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #173042;
+}
+
+.debug-text {
+  display: block;
+  margin: 12rpx 0 18rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #637f92;
+}
+
+.success-card {
+  background: linear-gradient(180deg, rgba(240, 251, 248, 0.96), rgba(255, 255, 255, 0.96));
+}

@@ -1,0 +1,104 @@
+<view class="page-shell">
+  <view class="hero-card">
+    <text class="eyebrow">PICKUP FLOW</text>
+    <text class="hero-title">手机号取件</text>
+    <text class="hero-subtitle">用户先输入预留手机号查询取件码，再到柜体触摸键盘输入六位验证码，由硬件把验证码上传到后端校验。</text>
+    <view class="hero-meta">
+      <text>接口地址：{{apiBaseUrl}}</text>
+      <text>当前页面同时保留了硬件联调模拟入口</text>
+    </view>
+  </view>
+
+  <view wx:if="{{errorMessage}}" class="notice-card error">
+    <text class="notice-title">取件流程未完成</text>
+    <text class="notice-body">{{errorMessage}}</text>
+  </view>
+
+  <view class="input-card">
+    <view class="section-head">
+      <text class="section-title">先查取件码</text>
+      <text class="section-subtitle">按手机号查询数据库中的待取件信息</text>
+    </view>
+
+    <text class="input-label">预留手机号</text>
+    <input
+      class="text-input"
+      type="number"
+      maxlength="11"
+      placeholder="请输入存件时登记的手机号"
+      value="{{phone}}"
+      bindinput="handlePhoneInput"
+    />
+    <text class="helper-text">查到记录后，页面会展示对应的六位验证码，用户需要在柜体键盘上输入它。</text>
+
+    <view class="btn-stack take-actions">
+      <button class="ghost-btn" bindtap="fillDemoPhone">填入示例号码</button>
+      <button class="primary-btn" bindtap="submitLookup" loading="{{lookupLoading}}" disabled="{{lookupLoading}}">查询取件码</button>
+    </view>
+  </view>
+
+  <view wx:if="{{lookupResult}}" class="result-card">
+    <view class="section-head">
+      <text class="section-title">待输入验证码</text>
+      <text class="section-subtitle">真实业务里由用户到硬件键盘输入</text>
+    </view>
+
+    <view class="pickup-code-panel">
+      <text class="code-label">六位取件码</text>
+      <text class="code-value">{{lookupResult.pickupCode}}</text>
+    </view>
+
+    <view class="inline-row">
+      <text>用户手机号</text>
+      <text>{{lookupResult.maskedPhone}}</text>
+    </view>
+    <view class="inline-row">
+      <text>柜门编号</text>
+      <text>{{lookupResult.cabinetNo}}</text>
+    </view>
+    <view class="inline-row">
+      <text>存件时间</text>
+      <text>{{lookupResult.createdAtText}}</text>
+    </view>
+
+    <text class="helper-text">{{lookupResult.instruction}}</text>
+
+    <view class="debug-card">
+      <text class="debug-title">开发联调模拟</text>
+      <text class="debug-text">如果当前还没有把 STM32 和 ESP8266 完全接上，可以先点击下面的按钮，模拟硬件把验证码上传给后端并触发开锁。</text>
+      <button class="secondary-btn" bindtap="simulateHardwareVerify" loading="{{verifyLoading}}" disabled="{{verifyLoading}}">模拟硬件上传验证码</button>
+    </view>
+  </view>
+
+  <view wx:if="{{verifyResult}}" class="result-card success-card">
+    <view class="section-head">
+      <text class="section-title">开锁成功</text>
+      <text class="section-subtitle">数据库记录已删除，柜体恢复空闲</text>
+    </view>
+
+    <view class="inline-row">
+      <text>用户手机号</text>
+      <text>{{verifyResult.maskedPhone}}</text>
+    </view>
+    <view class="inline-row">
+      <text>柜门编号</text>
+      <text>{{verifyResult.cabinetNo}}</text>
+    </view>
+    <view class="inline-row">
+      <text>本次来源</text>
+      <text>{{verifyResult.verifySource}}</text>
+    </view>
+    <view class="inline-row">
+      <text>验证码</text>
+      <text class="mono-text">{{verifyResult.pickupCode}}</text>
+    </view>
+
+    <text class="helper-text">{{verifyResult.message}}</text>
+    <text class="helper-text">{{verifyResult.relayText}}</text>
+
+    <view class="btn-stack">
+      <button class="primary-btn" bindtap="resetFlow">继续下一次联调</button>
+      <button class="ghost-btn" bindtap="goRecordsPage">查看操作记录</button>
+    </view>
+  </view>
+</view>

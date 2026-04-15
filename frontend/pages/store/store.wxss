@@ -1,0 +1,27 @@
+.store-actions {
+  margin-top: 18rpx;
+}
+
+.code-panel {
+  padding: 28rpx 24rpx;
+  margin-bottom: 18rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(145deg, #12314a, #1d6d88);
+  color: #f5fbff;
+}
+
+.code-label {
+  display: block;
+  font-size: 22rpx;
+  letter-spacing: 4rpx;
+  opacity: 0.8;
+}
+
+.code-value {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 64rpx;
+  letter-spacing: 10rpx;
+  font-weight: 700;
+  text-align: center;
+}

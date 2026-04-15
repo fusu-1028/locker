@@ -1,0 +1,53 @@
+<view class="page-shell">
+  <view class="hero-card">
+    <text class="eyebrow">OPERATION LOG</text>
+    <text class="hero-title">联调操作记录</text>
+    <text class="hero-subtitle">这里会展示每次存件和取件开锁的流水，方便你做课程演示、接口联调和硬件排错。</text>
+    <view class="hero-meta">
+      <text>接口地址：{{apiBaseUrl}}</text>
+      <text>下拉页面可以重新拉取最新记录</text>
+    </view>
+  </view>
+
+  <view wx:if="{{errorMessage}}" class="notice-card error">
+    <text class="notice-title">记录加载失败</text>
+    <text class="notice-body">{{errorMessage}}</text>
+  </view>
+
+  <view class="summary-grid">
+    <view wx:for="{{summaryCards}}" wx:key="label" class="summary-card {{item.accent}}">
+      <text class="summary-label">{{item.label}}</text>
+      <text class="summary-value">{{item.value}}</text>
+    </view>
+  </view>
+
+  <view class="panel-card">
+    <view class="section-head">
+      <text class="section-title">最近 20 条流水</text>
+      <text class="section-subtitle">包含来源、验证码和动作说明</text>
+    </view>
+
+    <view wx:if="{{records.length}}">
+      <view wx:for="{{records}}" wx:key="id" class="record-entry">
+        <view class="record-top">
+          <text class="chip {{item.actionClass}}">{{item.actionText}}</text>
+          <text class="record-time">{{item.createdAtText}}</text>
+        </view>
+
+        <view class="record-line">
+          <text>手机号：{{item.maskedPhone}}</text>
+          <text>柜门：{{item.cabinetNo}}</text>
+        </view>
+        <view class="record-line">
+          <text>验证码：{{item.pickupCode}}</text>
+          <text class="chip {{item.sourceClass}}">{{item.sourceText}}</text>
+        </view>
+        <text class="record-note">{{item.note}}</text>
+      </view>
+    </view>
+
+    <view wx:else class="empty-state">
+      目前还没有任何业务流水。你可以先去存件，再从取件页触发硬件验码开锁，回来这里查看完整记录。
+    </view>
+  </view>
+</view>

@@ -1,0 +1,28 @@
+CREATE DATABASE IF NOT EXISTS smart_locker
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE smart_locker;
+
+CREATE TABLE IF NOT EXISTS parcels (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  phone VARCHAR(20) NOT NULL COMMENT '用户预留手机号',
+  pickup_code CHAR(6) NOT NULL UNIQUE COMMENT '六位取件码',
+  cabinet_no TINYINT UNSIGNED NOT NULL DEFAULT 1 UNIQUE COMMENT '柜门编号，当前为单柜模式',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='当前柜门中的待取件包裹';
+
+CREATE TABLE IF NOT EXISTS parcel_records (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  parcel_id BIGINT UNSIGNED NULL COMMENT '原包裹主键，删除后仅作为日志保留',
+  action ENUM('store', 'pickup') NOT NULL COMMENT '业务动作',
+  phone VARCHAR(20) NOT NULL COMMENT '用户手机号',
+  pickup_code CHAR(6) NOT NULL COMMENT '六位取件码快照',
+  cabinet_no TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '柜门编号',
+  source VARCHAR(20) NOT NULL DEFAULT 'miniapp' COMMENT '触发来源：miniapp/hardware/debug',
+  note VARCHAR(255) NOT NULL DEFAULT '' COMMENT '本次动作说明',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_records_created_at (created_at),
+  INDEX idx_records_phone (phone)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='智能快递柜操作流水';

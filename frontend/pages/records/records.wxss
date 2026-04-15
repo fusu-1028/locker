@@ -1,0 +1,39 @@
+.record-entry {
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid rgba(18, 49, 74, 0.08);
+}
+
+.record-entry:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.record-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18rpx;
+}
+
+.record-time {
+  font-size: 22rpx;
+  color: #7790a3;
+}
+
+.record-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 14rpx;
+  font-size: 25rpx;
+  color: #23475d;
+}
+
+.record-note {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 23rpx;
+  line-height: 1.7;
+  color: #6f8698;
+}
