@@ -639,6 +639,10 @@ function createApp(service) {
     });
   }));
 
+  app.get('/health', (req, res) => {
+    res.json({ ok: true, service: 'locker-backend' });
+  });
+  
   app.post('/api/parcels/store', asyncHandler(async (req, res) => {
     const result = await service.storeParcel(req.body.phone);
     res.status(201).json({
