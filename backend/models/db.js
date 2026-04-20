@@ -1,13 +1,58 @@
 const mysql = require('mysql2/promise');
-const { database: DB_CONFIG } = require('../config');
-const {
-  escapeIdentifier,
-  logInfo,
-  logWarn,
-  wrapStartupError
-} = require('../utils/common');
+const { database: DB_CONFIG, locker } = require('../config');
+const { escapeIdentifier, logInfo, logWarn, wrapStartupError } = require('../utils/common');
 
 let pool = null;
+
+async function ensureCabinetSchema(connection) {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS cabinet (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      code VARCHAR(32) NOT NULL COMMENT '柜子编号',
+      status TINYINT NOT NULL DEFAULT 1 COMMENT '柜子状态：1正常，0故障'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='柜子表'
+  `);
+}
+
+async function ensureParcelOrderSchema(connection) {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS parcel_order (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      phone VARCHAR(20) NOT NULL COMMENT '用户手机号',
+      pickup_code VARCHAR(20) NOT NULL COMMENT '取件码',
+      status TINYINT NOT NULL DEFAULT 1 COMMENT '订单状态：1待确认存件，2待取件，3已取件',
+      create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+      update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+      INDEX idx_parcel_order_phone (phone),
+      INDEX idx_parcel_order_pickup_code (pickup_code)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单表'
+  `);
+}
+
+async function ensureDeviceLogSchema(connection) {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS device_log (
+      id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      order_id INT UNSIGNED NULL COMMENT '订单ID，可为空',
+      type VARCHAR(20) NOT NULL COMMENT '操作类型，例如 CONFIRM / OPEN / FAIL',
+      create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '时间'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备日志表'
+  `);
+}
+
+async function ensureCabinetSeed(connection) {
+  const [rows] = await connection.query(
+    'SELECT id FROM cabinet WHERE code = ? LIMIT 1',
+    [locker.cabinetCode]
+  );
+
+  if (rows.length === 0) {
+    await connection.query(
+      'INSERT INTO cabinet (code, status) VALUES (?, ?)',
+      [locker.cabinetCode, 1]
+    );
+  }
+}
 
 async function initializeDatabase() {
   if (pool) {
@@ -62,32 +107,10 @@ async function initializeDatabase() {
     await nextPool.query('SELECT 1');
     logInfo('MySQL connection established.');
 
-    await nextPool.query(`
-      CREATE TABLE IF NOT EXISTS parcels (
-        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        phone VARCHAR(20) NOT NULL COMMENT 'User phone number',
-        pickup_code CHAR(6) NOT NULL UNIQUE COMMENT '6-digit pickup code',
-        cabinet_no TINYINT UNSIGNED NOT NULL DEFAULT 1 UNIQUE COMMENT 'Cabinet number',
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Current parcels waiting for pickup'
-    `);
-
-    await nextPool.query(`
-      CREATE TABLE IF NOT EXISTS parcel_records (
-        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        parcel_id BIGINT UNSIGNED NULL COMMENT 'Historical parcel id',
-        action ENUM('store', 'pickup') NOT NULL COMMENT 'Business action',
-        phone VARCHAR(20) NOT NULL COMMENT 'User phone number',
-        pickup_code CHAR(6) NOT NULL COMMENT '6-digit pickup code snapshot',
-        cabinet_no TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Cabinet number',
-        source VARCHAR(20) NOT NULL DEFAULT 'miniapp' COMMENT 'Request source: miniapp/hardware/debug',
-        note VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'Business note',
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_records_created_at (created_at),
-        INDEX idx_records_phone (phone)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Locker operation history'
-    `);
+    await ensureCabinetSchema(nextPool);
+    await ensureParcelOrderSchema(nextPool);
+    await ensureDeviceLogSchema(nextPool);
+    await ensureCabinetSeed(nextPool);
 
     logInfo('MySQL tables ensured.');
     pool = nextPool;

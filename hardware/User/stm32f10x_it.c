@@ -23,6 +23,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
+#include "Serial.h"
 
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
@@ -151,6 +152,11 @@ void SysTick_Handler(void)
 /*void PPP_IRQHandler(void)
 {
 }*/
+
+void USART2_IRQHandler(void)
+{
+  ESP8266_USART_IRQHandler();
+}
 
 /**
   * @}

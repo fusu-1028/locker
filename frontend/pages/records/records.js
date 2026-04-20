@@ -2,20 +2,19 @@ const api = require('../../utils/api.js')
 const util = require('../../utils/util.js')
 
 function decorateRecord(record) {
-  const action = record && record.action ? record.action : 'store'
-  const source = record && record.source ? record.source : 'miniapp'
+  const type = record && record.type ? record.type : 'CREATE'
 
   return {
     id: record.id,
-    actionText: record.actionText || util.formatActionText(action),
-    actionClass: action === 'pickup' ? 'pickup' : 'store',
+    actionText: record.typeText || util.formatActionText(type),
+    actionClass: type === 'OPEN' ? 'pickup' : type === 'FAIL' ? 'pickup' : 'store',
     maskedPhone: record.maskedPhone || util.maskPhone(record.phone),
-    pickupCode: record.pickupCode,
-    cabinetNo: record.cabinetNo,
-    sourceText: util.formatSourceText(source),
-    sourceClass: source === 'debug' ? 'debug' : action === 'pickup' ? 'pickup' : 'store',
-    note: record.note,
-    createdAtText: util.formatServerTime(record.createdAt)
+    pickupCode: record.pickupCode || '--',
+    cabinetNo: 'CAB001',
+    sourceText: record.orderStatusText ? `订单状态：${record.orderStatusText}` : '订单状态：--',
+    sourceClass: type === 'FAIL' ? 'debug' : type === 'OPEN' ? 'pickup' : 'store',
+    note: record.message || '设备日志已记录。',
+    createdAtText: util.formatServerTime(record.createTime || record.createdAt)
   }
 }
 
@@ -51,15 +50,15 @@ Page({
         errorMessage: '',
         records: (payload.records || []).map(decorateRecord),
         summaryCards: [
-          { label: '总流水数', value: `${summary.totalCount || 0}`, accent: 'navy' },
-          { label: '累计存件', value: `${summary.storeCount || 0}`, accent: 'orange' },
-          { label: '累计取件', value: `${summary.pickupCount || 0}`, accent: 'teal' },
-          { label: '今日操作', value: `${summary.todayCount || 0}`, accent: 'navy' }
+          { label: '日志总数', value: `${summary.totalCount || 0}`, accent: 'navy' },
+          { label: '创建订单', value: `${summary.createCount || 0}`, accent: 'orange' },
+          { label: '确认存件', value: `${summary.confirmCount || 0}`, accent: 'teal' },
+          { label: '开锁取件', value: `${summary.openCount || 0}`, accent: 'navy' }
         ]
       })
     } catch (error) {
       this.setData({
-        errorMessage: error.message || '操作记录加载失败。'
+        errorMessage: error.message || '设备日志加载失败。'
       })
     } finally {
       this.setData({

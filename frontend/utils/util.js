@@ -1,3 +1,8 @@
+const formatNumber = n => {
+  const value = String(n)
+  return value[1] ? value : `0${value}`
+}
+
 const formatTime = date => {
   const year = date.getFullYear()
   const month = date.getMonth() + 1
@@ -7,11 +12,6 @@ const formatTime = date => {
   const second = date.getSeconds()
 
   return `${[year, month, day].map(formatNumber).join('/')} ${[hour, minute, second].map(formatNumber).join(':')}`
-}
-
-const formatNumber = n => {
-  n = n.toString()
-  return n[1] ? n : `0${n}`
 }
 
 const formatServerTime = value => {
@@ -69,16 +69,40 @@ const maskPhone = phone => {
 }
 
 const formatCabinetStatus = status => {
-  return status === 'occupied' ? '使用中' : '空闲待用'
+  const textMap = {
+    idle: '空闲',
+    pending_store: '待确认存件',
+    pending_pickup: '待取件',
+    fault: '故障'
+  }
+
+  return textMap[status] || status || '--'
+}
+
+const formatOrderStatusText = status => {
+  const textMap = {
+    1: '待确认存件',
+    2: '待取件',
+    3: '已取件'
+  }
+
+  return textMap[String(status)] || String(status || '--')
 }
 
 const formatActionText = action => {
-  return action === 'pickup' ? '取件开锁' : '存件完成'
+  const textMap = {
+    CREATE: '创建订单',
+    CONFIRM: '确认存件',
+    OPEN: '开锁取件',
+    FAIL: '校验失败'
+  }
+
+  return textMap[action] || action || '--'
 }
 
 const formatSourceText = source => {
   if (source === 'hardware') {
-    return '硬件键盘'
+    return '硬件上报'
   }
 
   if (source === 'debug') {
@@ -89,10 +113,12 @@ const formatSourceText = source => {
 }
 
 module.exports = {
+  formatNumber,
   formatTime,
   formatServerTime,
   maskPhone,
   formatCabinetStatus,
+  formatOrderStatusText,
   formatActionText,
   formatSourceText
 }

@@ -29,4 +29,12 @@
 .\objects\main.o: .\Librarys\stm32f10x_wwdg.h
 .\objects\main.o: .\Librarys\misc.h
 .\objects\main.o: .\Delay\Delay.h
+.\objects\main.o: .\Hardware\LockerCloud.h
 .\objects\main.o: .\Hardware\OLED.h
+.\objects\main.o: .\Hardware\Relay.h
+.\objects\main.o: .\Hardware\Serial.h
+.\objects\main.o: .\Hardware\USART1.h
+.\objects\main.o: .\Hardware\USART2.h
+.\objects\main.o: .\Hardware\TTP229.h
+.\objects\main.o: C:\qianru\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\main.o: C:\qianru\ARM\ARMCC\Bin\..\include\string.h

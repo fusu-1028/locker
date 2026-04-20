@@ -34,7 +34,7 @@ function clampRecordLimit(limitInput) {
   const parsed = Number.parseInt(limitInput, 10);
 
   if (Number.isNaN(parsed)) {
-    return locker.defaultRecordLimit;
+    return locker.defaultLogLimit;
   }
 
   return Math.min(Math.max(parsed, 1), 50);
@@ -71,8 +71,7 @@ function wrapStartupError(message, error, fallbackTarget) {
 }
 
 function getDisplayServerUrl() {
-  const displayHost = SERVER_CONFIG.host === '0.0.0.0' ? 'SERVER_IP_OR_DOMAIN' : SERVER_CONFIG.host;
-  return `http://${displayHost}:${SERVER_CONFIG.port}`;
+  return SERVER_CONFIG.publicBaseUrl;
 }
 
 function createCorsMiddleware() {

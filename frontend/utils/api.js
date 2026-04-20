@@ -54,7 +54,7 @@ function request(options) {
         reject(new Error(message))
       },
       fail() {
-        reject(new Error('无法连接到后端服务，请确认服务器地址、端口以及微信小程序 request 合法域名配置。'))
+        reject(new Error('无法连接后端服务，请检查服务器地址、端口和小程序 request 合法域名配置。'))
       }
     })
   })
@@ -90,6 +90,16 @@ function storeParcel(phone) {
   })
 }
 
+function confirmStore(pickupCode, useHardwareRoute) {
+  return request({
+    url: useHardwareRoute ? '/api/hardware/store/confirm' : '/api/parcels/store/confirm',
+    method: 'POST',
+    data: {
+      pickupCode
+    }
+  })
+}
+
 function preparePickup(phone) {
   return request({
     url: '/api/parcels/take',
@@ -110,6 +120,16 @@ function verifyPickup(pickupCode, useHardwareRoute) {
   })
 }
 
+function confirmPickup(pickupCode, useHardwareRoute) {
+  return request({
+    url: useHardwareRoute ? '/api/hardware/pickup/confirm' : '/api/parcels/pickup/confirm',
+    method: 'POST',
+    data: {
+      pickupCode
+    }
+  })
+}
+
 module.exports = {
   DEFAULT_BASE_URL,
   getBaseUrl,
@@ -119,6 +139,8 @@ module.exports = {
   getCabinetStatus,
   listRecords,
   storeParcel,
+  confirmStore,
   preparePickup,
-  verifyPickup
+  verifyPickup,
+  confirmPickup
 }

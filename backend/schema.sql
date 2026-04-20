@@ -4,32 +4,75 @@ CREATE DATABASE IF NOT EXISTS smart_locker
 
 USE smart_locker;
 
--- Optional: run the statements below as MySQL root if locker_user has not been created yet.
--- CREATE USER IF NOT EXISTS 'locker_user'@'127.0.0.1' IDENTIFIED BY '123456';
--- CREATE USER IF NOT EXISTS 'locker_user'@'localhost' IDENTIFIED BY '123456';
--- GRANT ALL PRIVILEGES ON smart_locker.* TO 'locker_user'@'127.0.0.1';
--- GRANT ALL PRIVILEGES ON smart_locker.* TO 'locker_user'@'localhost';
--- FLUSH PRIVILEGES;
+DROP TABLE IF EXISTS device_log;
+DROP TABLE IF EXISTS parcel_order;
+DROP TABLE IF EXISTS cabinet;
 
-CREATE TABLE IF NOT EXISTS parcels (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  phone VARCHAR(20) NOT NULL COMMENT 'User phone number',
-  pickup_code CHAR(6) NOT NULL UNIQUE COMMENT '6-digit pickup code',
-  cabinet_no TINYINT UNSIGNED NOT NULL DEFAULT 1 UNIQUE COMMENT 'Cabinet number',
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Current parcels waiting for pickup';
+CREATE TABLE cabinet (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  code VARCHAR(32) NOT NULL COMMENT '柜子编号',
+  status TINYINT NOT NULL DEFAULT 1 COMMENT '柜子状态：1正常，0故障',
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='柜子表';
 
-CREATE TABLE IF NOT EXISTS parcel_records (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  parcel_id BIGINT UNSIGNED NULL COMMENT 'Historical parcel id',
-  action ENUM('store', 'pickup') NOT NULL COMMENT 'Business action',
-  phone VARCHAR(20) NOT NULL COMMENT 'User phone number',
-  pickup_code CHAR(6) NOT NULL COMMENT '6-digit pickup code snapshot',
-  cabinet_no TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Cabinet number',
-  source VARCHAR(20) NOT NULL DEFAULT 'miniapp' COMMENT 'Request source: miniapp/hardware/debug',
-  note VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'Business note',
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_records_created_at (created_at),
-  INDEX idx_records_phone (phone)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Locker operation history';
+CREATE TABLE parcel_order (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  phone VARCHAR(20) NOT NULL COMMENT '用户手机号',
+  pickup_code VARCHAR(20) NOT NULL COMMENT '取件码',
+  status TINYINT NOT NULL DEFAULT 1 COMMENT '订单状态：1待确认存件，2待取件，3已取件',
+  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  INDEX idx_parcel_order_phone (phone),
+  INDEX idx_parcel_order_pickup_code (pickup_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单表';
+
+CREATE TABLE device_log (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  order_id INT UNSIGNED NULL COMMENT '订单ID，可为空',
+  type VARCHAR(20) NOT NULL COMMENT '操作类型，例如：CONFIRM / OPEN / FAIL',
+  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '时间',
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='设备日志表';
+
+INSERT INTO cabinet (code, status)
+VALUES ('CAB001', 1);
+
+INSERT INTO parcel_order (phone, pickup_code, status)
+VALUES ('13800138000', '123456', 1);
+
+INSERT INTO device_log (order_id, type)
+VALUES (1, 'CREATE');
+
+-- 常用 SQL 示例（按需执行）
+
+-- 1. 插入订单（存件）
+-- INSERT INTO parcel_order (phone, pickup_code, status)
+-- VALUES ('13900001111', '654321', 1);
+
+-- 2. 更新为“已确认存件（待取件）”
+-- UPDATE parcel_order
+-- SET status = 2, update_time = NOW()
+-- WHERE pickup_code = '654321' AND status = 1;
+
+-- 3. 根据手机号查询订单
+-- SELECT id, phone, pickup_code, status, create_time, update_time
+-- FROM parcel_order
+-- WHERE phone = '13900001111'
+-- ORDER BY id DESC;
+
+-- 4. 根据取件码查询订单
+-- SELECT id, phone, pickup_code, status, create_time, update_time
+-- FROM parcel_order
+-- WHERE pickup_code = '654321'
+-- ORDER BY id DESC
+-- LIMIT 1;
+
+-- 5. 更新为“已取件”
+-- UPDATE parcel_order
+-- SET status = 3, update_time = NOW()
+-- WHERE pickup_code = '654321' AND status = 2;
+
+-- 6. 插入日志记录
+-- INSERT INTO device_log (order_id, type)
+-- VALUES (1, 'CONFIRM');

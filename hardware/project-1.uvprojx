@@ -665,6 +665,66 @@
           <GroupName>Hardware</GroupName>
           <Files>
             <File>
+              <FileName>Serial.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\Serial.c</FilePath>
+            </File>
+            <File>
+              <FileName>Serial.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\Serial.h</FilePath>
+            </File>
+            <File>
+              <FileName>USART1.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\USART1.c</FilePath>
+            </File>
+            <File>
+              <FileName>USART1.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\USART1.h</FilePath>
+            </File>
+            <File>
+              <FileName>USART2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\USART2.c</FilePath>
+            </File>
+            <File>
+              <FileName>USART2.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\USART2.h</FilePath>
+            </File>
+            <File>
+              <FileName>Relay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\Relay.c</FilePath>
+            </File>
+            <File>
+              <FileName>Relay.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\Relay.h</FilePath>
+            </File>
+            <File>
+              <FileName>TTP229.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\TTP229.c</FilePath>
+            </File>
+            <File>
+              <FileName>TTP229.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\TTP229.h</FilePath>
+            </File>
+            <File>
+              <FileName>LockerCloud.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Hardware\LockerCloud.c</FilePath>
+            </File>
+            <File>
+              <FileName>LockerCloud.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Hardware\LockerCloud.h</FilePath>
+            </File>
+            <File>
               <FileName>OLED.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Hardware\OLED.c</FilePath>

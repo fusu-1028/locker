@@ -29,3 +29,6 @@
 .\objects\stm32f10x_it.o: .\Librarys\stm32f10x_usart.h
 .\objects\stm32f10x_it.o: .\Librarys\stm32f10x_wwdg.h
 .\objects\stm32f10x_it.o: .\Librarys\misc.h
+.\objects\stm32f10x_it.o: .\Hardware\Serial.h
+.\objects\stm32f10x_it.o: .\Hardware\USART1.h
+.\objects\stm32f10x_it.o: .\Hardware\USART2.h

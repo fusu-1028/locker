@@ -1,38 +1,46 @@
 const api = require('../../utils/api.js')
 const util = require('../../utils/util.js')
 
+function getCabinetClass(status) {
+  return status === 'idle' ? 'idle' : 'occupied'
+}
+
 function decorateCabinet(cabinet) {
-  const parcel = cabinet && cabinet.parcel ? cabinet.parcel : null
+  const order = cabinet && (cabinet.order || cabinet.parcel) ? (cabinet.order || cabinet.parcel) : null
   const status = cabinet && cabinet.status ? cabinet.status : 'idle'
+  const cabinetCode = cabinet && (cabinet.cabinetCode || cabinet.code || cabinet.cabinetNo)
+    ? (cabinet.cabinetCode || cabinet.code || cabinet.cabinetNo)
+    : 'CAB001'
 
   return {
-    cabinetNo: cabinet && cabinet.cabinetNo ? cabinet.cabinetNo : 1,
+    cabinetNo: cabinetCode,
     status,
     statusText: util.formatCabinetStatus(status),
-    statusClass: status === 'occupied' ? 'occupied' : 'idle',
-    hasParcel: !!parcel,
-    parcel: parcel ? {
-      phone: parcel.phone,
-      maskedPhone: parcel.maskedPhone || util.maskPhone(parcel.phone),
-      pickupCode: parcel.pickupCode,
-      createdAtText: util.formatServerTime(parcel.createdAt)
+    statusClass: getCabinetClass(status),
+    hasParcel: !!order,
+    parcel: order ? {
+      phone: order.phone,
+      maskedPhone: order.maskedPhone || util.maskPhone(order.phone),
+      pickupCode: order.pickupCode,
+      statusText: order.statusText || util.formatOrderStatusText(order.status),
+      createdAtText: util.formatServerTime(order.createTime || order.createdAt)
     } : null
   }
 }
 
 function decorateRecord(record) {
-  const action = record && record.action ? record.action : 'store'
+  const type = record && record.type ? record.type : 'CREATE'
 
   return {
     id: record.id,
-    action,
-    actionText: record.actionText || util.formatActionText(action),
-    actionClass: action === 'pickup' ? 'pickup' : 'store',
+    action: type,
+    actionText: record.typeText || util.formatActionText(type),
+    actionClass: type === 'OPEN' ? 'pickup' : type === 'FAIL' ? 'pickup' : 'store',
     maskedPhone: record.maskedPhone || util.maskPhone(record.phone),
     pickupCode: record.pickupCode,
-    cabinetNo: record.cabinetNo,
-    note: record.note,
-    createdAtText: util.formatServerTime(record.createdAt)
+    cabinetNo: 'CAB001',
+    note: record.message,
+    createdAtText: util.formatServerTime(record.createTime || record.createdAt)
   }
 }
 
@@ -72,10 +80,10 @@ Page({
       this.setData({
         cabinet,
         summaryCards: [
-          { label: '柜门编号', value: `0${cabinet.cabinetNo}`, accent: 'navy' },
-          { label: '当前状态', value: cabinet.statusText, accent: cabinet.status === 'occupied' ? 'orange' : 'teal' },
-          { label: '累计存件', value: `${summary.storeCount || 0}`, accent: 'navy' },
-          { label: '累计取件', value: `${summary.pickupCount || 0}`, accent: 'teal' }
+          { label: '柜体编号', value: `${cabinet.cabinetNo}`, accent: 'navy' },
+          { label: '当前状态', value: cabinet.statusText, accent: cabinet.status === 'idle' ? 'teal' : 'orange' },
+          { label: '待确认存件', value: `${summary.pendingStoreCount || 0}`, accent: 'navy' },
+          { label: '待取件', value: `${summary.pendingPickupCount || 0}`, accent: 'teal' }
         ],
         recentRecords: (dashboard.recentRecords || []).map(decorateRecord),
         flowSteps: dashboard.flow || [],

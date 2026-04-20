@@ -2,7 +2,7 @@
   <view class="hero-card">
     <text class="eyebrow">SMART LOCKER</text>
     <text class="hero-title">智能快递柜联调台</text>
-    <text class="hero-subtitle">把小程序下单、数据库记录、键盘验码和硬件开锁放到一个完整闭环里。</text>
+    <text class="hero-subtitle">把小程序下单、云端数据库、TTP229 键盘验码和继电器开锁串成一条完整业务链路。</text>
     <view class="hero-meta">
       <text>接口地址：{{apiBaseUrl}}</text>
       <text>最近刷新：{{refreshedAt}}</text>
@@ -32,7 +32,7 @@
         <text class="locker-no">1 号柜</text>
         <text class="chip {{cabinet.statusClass}}">{{cabinet.statusText}}</text>
       </view>
-      <text class="locker-desc">柜体状态会跟随后端数据库实时变化，存件后占用，验码成功后恢复空闲。</text>
+      <text class="locker-desc">柜体状态会跟随后端数据库变化：存件请求后进入待关门确认，确认完成后变为待取件，取件完成后恢复空闲。</text>
     </view>
 
     <view wx:if="{{cabinet.hasParcel}}" class="parcel-brief">
@@ -45,13 +45,13 @@
         <text class="mono-text">{{cabinet.parcel.pickupCode}}</text>
       </view>
       <view class="inline-row">
-        <text>存件时间</text>
+        <text>创建时间</text>
         <text>{{cabinet.parcel.createdAtText}}</text>
       </view>
     </view>
 
     <view wx:else class="empty-state">
-      柜门当前空闲，可以直接进入存件流程。前端提交手机号后，后端会生成随机六位验证码并锁定柜体状态。
+      柜门当前空闲，可以直接开始体验存件流程。
     </view>
   </view>
 
@@ -70,7 +70,7 @@
   <view class="panel-card">
     <view class="section-head">
       <text class="section-title">最近操作</text>
-      <text class="section-subtitle">保留存件与取件流水，便于调试演示</text>
+      <text class="section-subtitle">便于演示状态流转</text>
     </view>
 
     <view wx:if="{{recentRecords.length}}">
@@ -85,14 +85,14 @@
     </view>
 
     <view wx:else class="empty-state">
-      还没有业务流水。先去体验一次存件，再通过取件流程触发硬件验码与开锁。
+      还没有业务流水。可以先去存件，再体验一次取件流程。
     </view>
   </view>
 
   <view class="panel-card">
     <view class="section-head">
       <text class="section-title">业务流程</text>
-      <text class="section-subtitle">演示时可以按这个顺序讲解</text>
+      <text class="section-subtitle">适合答辩时逐步讲解</text>
     </view>
     <view wx:for="{{flowSteps}}" wx:key="*this" class="flow-item">
       <text class="flow-index">{{index + 1}}</text>

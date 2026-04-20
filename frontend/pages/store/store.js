@@ -1,31 +1,44 @@
 const api = require('../../utils/api.js')
 const util = require('../../utils/util.js')
 
+function getCabinetClass(status) {
+  return status === 'idle' ? 'idle' : 'occupied'
+}
+
 function decorateCabinet(cabinet) {
   const status = cabinet && cabinet.status ? cabinet.status : 'idle'
-  const parcel = cabinet && cabinet.parcel ? cabinet.parcel : null
+  const order = cabinet && (cabinet.order || cabinet.parcel) ? (cabinet.order || cabinet.parcel) : null
+  const cabinetCode = cabinet && (cabinet.cabinetCode || cabinet.code || cabinet.cabinetNo)
+    ? (cabinet.cabinetCode || cabinet.code || cabinet.cabinetNo)
+    : 'CAB001'
 
   return {
-    cabinetNo: cabinet && cabinet.cabinetNo ? cabinet.cabinetNo : 1,
+    cabinetNo: cabinetCode,
     status,
     statusText: util.formatCabinetStatus(status),
-    statusClass: status === 'occupied' ? 'occupied' : 'idle',
-    parcel: parcel ? {
-      maskedPhone: parcel.maskedPhone || util.maskPhone(parcel.phone),
-      pickupCode: parcel.pickupCode,
-      createdAtText: util.formatServerTime(parcel.createdAt)
+    statusClass: getCabinetClass(status),
+    parcel: order ? {
+      maskedPhone: order.maskedPhone || util.maskPhone(order.phone),
+      pickupCode: order.pickupCode,
+      statusText: order.statusText || util.formatOrderStatusText(order.status),
+      createdAtText: util.formatServerTime(order.createTime || order.createdAt)
     } : null
   }
 }
 
-function decorateResult(parcel) {
+function decorateStoreResult(payload) {
   return {
-    phone: parcel.phone,
-    maskedPhone: parcel.maskedPhone || util.maskPhone(parcel.phone),
-    pickupCode: parcel.pickupCode,
-    cabinetNo: parcel.cabinetNo,
-    createdAtText: util.formatServerTime(parcel.createdAt),
-    instruction: parcel.instruction
+    phone: payload.phone,
+    maskedPhone: payload.maskedPhone || util.maskPhone(payload.phone),
+    pickupCode: payload.pickupCode,
+    cabinetNo: payload.cabinetCode || payload.cabinetNo || 'CAB001',
+    createdAtText: util.formatServerTime(payload.createTime || payload.createdAt),
+    instruction: payload.instruction,
+    relayText: payload.relayCommand
+      ? `开锁脉冲：${payload.relayCommand.durationMs}ms`
+      : '等待硬件执行开锁',
+    confirmed: false,
+    statusText: payload.statusText || util.formatOrderStatusText(payload.status || 1)
   }
 }
 
@@ -33,6 +46,7 @@ Page({
   data: {
     phone: '',
     submitting: false,
+    confirmingStore: false,
     loadingCabinet: true,
     errorMessage: '',
     cabinet: decorateCabinet({}),
@@ -98,37 +112,39 @@ Page({
 
     this.setData({
       submitting: true,
-      errorMessage: ''
+      errorMessage: '',
+      result: null
     })
 
     try {
       const response = await api.storeParcel(phone)
-      const result = decorateResult(response.data || {})
+      const result = decorateStoreResult(response.data || {})
 
       this.setData({
         result,
         phone: '',
         cabinet: {
           cabinetNo: result.cabinetNo,
-          status: 'occupied',
-          statusText: util.formatCabinetStatus('occupied'),
-          statusClass: 'occupied',
+          status: 'pending_store',
+          statusText: util.formatCabinetStatus('pending_store'),
+          statusClass: getCabinetClass('pending_store'),
           parcel: {
             maskedPhone: result.maskedPhone,
             pickupCode: result.pickupCode,
+            statusText: util.formatOrderStatusText(1),
             createdAtText: result.createdAtText
           }
         }
       })
 
       wx.showModal({
-        title: '存件成功',
-        content: '数据库已写入记录并生成六位取件码，请提醒用户妥善保存。',
+        title: '订单已创建',
+        content: '系统已生成取件码。请放入快递后，再通过柜体确认键完成存件。',
         showCancel: false
       })
     } catch (error) {
       this.setData({
-        errorMessage: error.message || '存件失败，请稍后再试。'
+        errorMessage: error.message || '存件失败，请稍后重试。'
       })
 
       wx.showToast({
@@ -138,6 +154,57 @@ Page({
     } finally {
       this.setData({
         submitting: false
+      })
+    }
+  },
+
+  async confirmStore() {
+    const result = this.data.result
+
+    if (!result || result.confirmed) {
+      return
+    }
+
+    this.setData({
+      confirmingStore: true,
+      errorMessage: ''
+    })
+
+    try {
+      await api.confirmStore(result.pickupCode, false)
+
+      this.setData({
+        result: {
+          ...result,
+          confirmed: true,
+          statusText: util.formatOrderStatusText(2),
+          instruction: '存件已确认，订单状态已更新为待取件。'
+        },
+        cabinet: {
+          cabinetNo: result.cabinetNo,
+          status: 'pending_pickup',
+          statusText: util.formatCabinetStatus('pending_pickup'),
+          statusClass: getCabinetClass('pending_pickup'),
+          parcel: {
+            maskedPhone: result.maskedPhone,
+            pickupCode: result.pickupCode,
+            statusText: util.formatOrderStatusText(2),
+            createdAtText: result.createdAtText
+          }
+        }
+      })
+
+      wx.showToast({
+        title: '存件已确认',
+        icon: 'success'
+      })
+    } catch (error) {
+      this.setData({
+        errorMessage: error.message || '存件确认失败。'
+      })
+    } finally {
+      this.setData({
+        confirmingStore: false
       })
     }
   },

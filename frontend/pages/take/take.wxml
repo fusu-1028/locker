@@ -2,10 +2,10 @@
   <view class="hero-card">
     <text class="eyebrow">PICKUP FLOW</text>
     <text class="hero-title">手机号取件</text>
-    <text class="hero-subtitle">用户先输入预留手机号查询取件码，再到柜体触摸键盘输入六位验证码，由硬件把验证码上传到后端校验。</text>
+    <text class="hero-subtitle">用户先输入手机号查询待取件记录，再到柜体 TTP229 键盘输入 6 位取件码，STM32 上传校验后触发开锁。</text>
     <view class="hero-meta">
       <text>接口地址：{{apiBaseUrl}}</text>
-      <text>当前页面同时保留了硬件联调模拟入口</text>
+      <text>当前页面保留硬件联调模拟入口</text>
     </view>
   </view>
 
@@ -16,8 +16,8 @@
 
   <view class="input-card">
     <view class="section-head">
-      <text class="section-title">先查取件码</text>
-      <text class="section-subtitle">按手机号查询数据库中的待取件信息</text>
+      <text class="section-title">先查待取件信息</text>
+      <text class="section-subtitle">按手机号查询数据库中是否存在待取件记录</text>
     </view>
 
     <text class="input-label">预留手机号</text>
@@ -29,22 +29,22 @@
       value="{{phone}}"
       bindinput="handlePhoneInput"
     />
-    <text class="helper-text">查到记录后，页面会展示对应的六位验证码，用户需要在柜体键盘上输入它。</text>
+    <text class="helper-text">真实流程里用户不会在手机上输入取件码，取件码应在 STM32 外接的 TTP229 键盘上输入。</text>
 
     <view class="btn-stack take-actions">
       <button class="ghost-btn" bindtap="fillDemoPhone">填入示例号码</button>
-      <button class="primary-btn" bindtap="submitLookup" loading="{{lookupLoading}}" disabled="{{lookupLoading}}">查询取件码</button>
+      <button class="primary-btn" bindtap="submitLookup" loading="{{lookupLoading}}" disabled="{{lookupLoading}}">查询待取件</button>
     </view>
   </view>
 
   <view wx:if="{{lookupResult}}" class="result-card">
     <view class="section-head">
       <text class="section-title">待输入验证码</text>
-      <text class="section-subtitle">真实业务里由用户到硬件键盘输入</text>
+      <text class="section-subtitle">下一步由硬件上传取件码</text>
     </view>
 
     <view class="pickup-code-panel">
-      <text class="code-label">六位取件码</text>
+      <text class="code-label">6 位取件码</text>
       <text class="code-value">{{lookupResult.pickupCode}}</text>
     </view>
 
@@ -65,15 +65,15 @@
 
     <view class="debug-card">
       <text class="debug-title">开发联调模拟</text>
-      <text class="debug-text">如果当前还没有把 STM32 和 ESP8266 完全接上，可以先点击下面的按钮，模拟硬件把验证码上传给后端并触发开锁。</text>
+      <text class="debug-text">如果当前还没把 STM32 和 ESP8266 完全接上，可以先点击下面按钮，模拟硬件把验证码上传到后端并触发开锁。</text>
       <button class="secondary-btn" bindtap="simulateHardwareVerify" loading="{{verifyLoading}}" disabled="{{verifyLoading}}">模拟硬件上传验证码</button>
     </view>
   </view>
 
   <view wx:if="{{verifyResult}}" class="result-card success-card">
     <view class="section-head">
-      <text class="section-title">开锁成功</text>
-      <text class="section-subtitle">数据库记录已删除，柜体恢复空闲</text>
+      <text class="section-title">{{verifyResult.completed ? '取件完成' : '已开锁，待关门确认'}}</text>
+      <text class="section-subtitle">和真实柜门流程保持一致</text>
     </view>
 
     <view class="inline-row">
@@ -96,7 +96,12 @@
     <text class="helper-text">{{verifyResult.message}}</text>
     <text class="helper-text">{{verifyResult.relayText}}</text>
 
-    <view class="btn-stack">
+    <view wx:if="{{!verifyResult.completed}}" class="btn-stack">
+      <button class="primary-btn" bindtap="confirmPickup" loading="{{confirmingPickup}}" disabled="{{confirmingPickup}}">模拟已关门，完成取件</button>
+      <button class="ghost-btn" bindtap="goRecordsPage">查看操作记录</button>
+    </view>
+
+    <view wx:else class="btn-stack">
       <button class="primary-btn" bindtap="resetFlow">继续下一次联调</button>
       <button class="ghost-btn" bindtap="goRecordsPage">查看操作记录</button>
     </view>

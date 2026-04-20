@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://YOUR_SERVER_IP:3000'
+const API_BASE_URL = 'http://47.239.169.253:3000'
 
 module.exports = {
   API_BASE_URL

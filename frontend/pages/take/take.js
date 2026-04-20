@@ -1,27 +1,29 @@
 const api = require('../../utils/api.js')
 const util = require('../../utils/util.js')
 
-function decorateLookupResult(parcel) {
+function decorateLookupResult(order) {
   return {
-    phone: parcel.phone,
-    maskedPhone: parcel.maskedPhone || util.maskPhone(parcel.phone),
-    pickupCode: parcel.pickupCode,
-    cabinetNo: parcel.cabinetNo,
-    createdAtText: util.formatServerTime(parcel.createdAt),
-    instruction: parcel.instruction
+    phone: order.phone,
+    maskedPhone: order.maskedPhone || util.maskPhone(order.phone),
+    pickupCode: order.pickupCode,
+    cabinetNo: order.cabinetCode || order.cabinetNo || 'CAB001',
+    statusText: order.statusText || util.formatOrderStatusText(order.status),
+    createdAtText: util.formatServerTime(order.createTime || order.createdAt),
+    instruction: order.instruction
   }
 }
 
 function decorateVerifyResult(result) {
   return {
     maskedPhone: result.maskedPhone || util.maskPhone(result.phone),
-    cabinetNo: result.cabinetNo,
+    cabinetNo: result.cabinetCode || result.cabinetNo || 'CAB001',
     pickupCode: result.pickupCode,
     verifySource: util.formatSourceText(result.verifySource),
     relayText: result.relayCommand
-      ? `继电器动作：${result.relayCommand.action}，持续 ${result.relayCommand.durationMs}ms`
-      : '继电器动作待硬件执行',
-    message: result.message
+      ? `开锁脉冲：${result.relayCommand.durationMs}ms`
+      : '等待硬件执行开锁',
+    message: result.message,
+    completed: Boolean(result.completed)
   }
 }
 
@@ -30,6 +32,7 @@ Page({
     phone: '',
     lookupLoading: false,
     verifyLoading: false,
+    confirmingPickup: false,
     errorMessage: '',
     lookupResult: null,
     verifyResult: null,
@@ -79,7 +82,7 @@ Page({
     } catch (error) {
       this.setData({
         lookupResult: null,
-        errorMessage: error.message || '未找到该手机号对应的待取件信息。'
+        errorMessage: error.message || '未找到该手机号对应的待取件订单。'
       })
     } finally {
       this.setData({
@@ -102,25 +105,55 @@ Page({
 
     try {
       const response = await api.verifyPickup(lookupResult.pickupCode, true)
-
       this.setData({
-        lookupResult: null,
-        verifyResult: decorateVerifyResult(response.data || {}),
-        phone: ''
+        verifyResult: decorateVerifyResult(response.data || {})
       })
 
       wx.showModal({
-        title: '硬件开锁指令已触发',
-        content: '本次是通过小程序模拟 ESP8266 上传验证码，实际部署时由硬件调用同一接口。',
+        title: '取件完成',
+        content: '取件码校验成功，系统已经开锁并将订单更新为已取件。',
         showCancel: false
       })
     } catch (error) {
       this.setData({
-        errorMessage: error.message || '验证码校验失败。'
+        errorMessage: error.message || '取件码校验失败。'
       })
     } finally {
       this.setData({
         verifyLoading: false
+      })
+    }
+  },
+
+  async confirmPickup() {
+    const verifyResult = this.data.verifyResult
+
+    if (!verifyResult || verifyResult.completed) {
+      return
+    }
+
+    this.setData({
+      confirmingPickup: true,
+      errorMessage: ''
+    })
+
+    try {
+      await api.confirmPickup(verifyResult.pickupCode, true)
+
+      this.setData({
+        verifyResult: {
+          ...verifyResult,
+          completed: true,
+          message: '订单已更新为已取件。'
+        }
+      })
+    } catch (error) {
+      this.setData({
+        errorMessage: error.message || '取件确认失败。'
+      })
+    } finally {
+      this.setData({
+        confirmingPickup: false
       })
     }
   },
