@@ -173,7 +173,8 @@ button::after {
   background: rgba(18, 171, 138, 0.14);
 }
 
-.chip.debug {
+.chip.debug,
+.chip.warning {
   color: #8b4f06;
   background: rgba(255, 197, 102, 0.18);
 }

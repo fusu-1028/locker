@@ -31,6 +31,18 @@ function setBaseUrl(baseUrl) {
   }
 }
 
+function normalizeSource(source) {
+  if (source === true) {
+    return 'hardware'
+  }
+
+  if (source === false || source === undefined || source === null || source === '') {
+    return 'miniapp'
+  }
+
+  return String(source)
+}
+
 function request(options) {
   return new Promise((resolve, reject) => {
     wx.request({
@@ -49,12 +61,12 @@ function request(options) {
 
         const message = response.data && response.data.message
           ? response.data.message
-          : '请求失败，请稍后重试。'
+          : '服务请求失败，请稍后重试。'
 
         reject(new Error(message))
       },
       fail() {
-        reject(new Error('无法连接后端服务，请检查服务器地址、端口和小程序 request 合法域名配置。'))
+        reject(new Error('网络连接异常，请检查网络后重试。'))
       }
     })
   })
@@ -90,12 +102,13 @@ function storeParcel(phone) {
   })
 }
 
-function confirmStore(pickupCode, useHardwareRoute) {
+function confirmStore(pickupCode, source) {
   return request({
-    url: useHardwareRoute ? '/api/hardware/store/confirm' : '/api/parcels/store/confirm',
+    url: '/api/parcels/store/confirm',
     method: 'POST',
     data: {
-      pickupCode
+      pickupCode,
+      source: normalizeSource(source)
     }
   })
 }
@@ -110,22 +123,24 @@ function preparePickup(phone) {
   })
 }
 
-function verifyPickup(pickupCode, useHardwareRoute) {
+function verifyPickup(pickupCode, source) {
   return request({
-    url: useHardwareRoute ? '/api/hardware/verify-pickup' : '/api/parcels/verify-pickup',
+    url: '/api/parcels/verify-pickup',
     method: 'POST',
     data: {
-      pickupCode
+      pickupCode,
+      source: normalizeSource(source)
     }
   })
 }
 
-function confirmPickup(pickupCode, useHardwareRoute) {
+function confirmPickup(pickupCode, source) {
   return request({
-    url: useHardwareRoute ? '/api/hardware/pickup/confirm' : '/api/parcels/pickup/confirm',
+    url: '/api/parcels/pickup/confirm',
     method: 'POST',
     data: {
-      pickupCode
+      pickupCode,
+      source: normalizeSource(source)
     }
   })
 }

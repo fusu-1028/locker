@@ -16,9 +16,10 @@ function createParcelRouter(controller) {
   router.post('/api/parcels/verify-pickup', asyncHandler(controller.verifyPickup));
   router.post('/api/parcels/pickup/confirm', asyncHandler(controller.confirmPickup));
 
-  router.post('/api/hardware/store/confirm', asyncHandler(controller.confirmHardwareStore));
-  router.post('/api/hardware/verify-pickup', asyncHandler(controller.verifyHardwarePickup));
-  router.post('/api/hardware/pickup/confirm', asyncHandler(controller.confirmHardwarePickup));
+  // Keep the old hardware-prefixed routes as aliases for backward compatibility.
+  router.post('/api/hardware/store/confirm', asyncHandler(controller.confirmStore));
+  router.post('/api/hardware/verify-pickup', asyncHandler(controller.verifyPickup));
+  router.post('/api/hardware/pickup/confirm', asyncHandler(controller.confirmPickup));
 
   return router;
 }

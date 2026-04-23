@@ -88,7 +88,7 @@ uint8_t LockerCloud_VerifyPickupCode(const char *pickupCode, uint16_t *durationM
         return 0;
     }
 
-    sprintf(jsonBody, "{\"pickupCode\":\"%s\"}", pickupCode);
+    snprintf(jsonBody, sizeof(jsonBody), "{\"pickupCode\":\"%s\",\"source\":\"hardware\"}", pickupCode);
     printf("[cloud] Verifying pickup code %s.\r\n", pickupCode);
 
     if (!LockerCloud_HttpPostJson(LOCKER_VERIFY_PICKUP_PATH, jsonBody, response, sizeof(response)))
@@ -115,7 +115,7 @@ uint8_t LockerCloud_ConfirmPickup(const char *pickupCode)
         return 0;
     }
 
-    sprintf(jsonBody, "{\"pickupCode\":\"%s\"}", pickupCode);
+    snprintf(jsonBody, sizeof(jsonBody), "{\"pickupCode\":\"%s\",\"source\":\"hardware\"}", pickupCode);
     printf("[cloud] Confirming pickup completion for %s.\r\n", pickupCode);
 
     if (!LockerCloud_HttpPostJson(LOCKER_CONFIRM_PICKUP_PATH, jsonBody, response, sizeof(response)))
@@ -137,7 +137,7 @@ uint8_t LockerCloud_ConfirmStore(const char *pickupCode)
         return 0;
     }
 
-    sprintf(jsonBody, "{\"pickupCode\":\"%s\"}", pickupCode);
+    snprintf(jsonBody, sizeof(jsonBody), "{\"pickupCode\":\"%s\",\"source\":\"hardware\"}", pickupCode);
     printf("[cloud] Confirming store completion for %s.\r\n", pickupCode);
 
     if (!LockerCloud_HttpPostJson(LOCKER_CONFIRM_STORE_PATH, jsonBody, response, sizeof(response)))

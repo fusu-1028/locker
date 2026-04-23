@@ -1,5 +1,21 @@
 const { messages } = require('../config');
 
+function resolveRequestSource(req, fallback = 'miniapp') {
+  const bodySource = req && req.body && req.body.source
+    ? String(req.body.source).trim()
+    : '';
+
+  if (bodySource) {
+    return bodySource;
+  }
+
+  if (req && typeof req.originalUrl === 'string' && req.originalUrl.startsWith('/api/hardware/')) {
+    return 'hardware';
+  }
+
+  return fallback;
+}
+
 function createParcelController(service) {
   return {
     async health(req, res) {
@@ -47,20 +63,7 @@ function createParcelController(service) {
 
     async confirmStore(req, res) {
       const result = await service.confirmStoreByPickupCode(
-        req.body.pickupCode || req.body.code,
-        { source: 'miniapp' }
-      );
-
-      res.json({
-        message: messages.storeConfirmOk,
-        data: result
-      });
-    },
-
-    async confirmHardwareStore(req, res) {
-      const result = await service.confirmStoreByPickupCode(
-        req.body.pickupCode || req.body.code,
-        { source: 'hardware' }
+        req.body.pickupCode || req.body.code
       );
 
       res.json({
@@ -80,7 +83,7 @@ function createParcelController(service) {
     async verifyPickup(req, res) {
       const result = await service.verifyAndOpenByPickupCode(
         req.body.pickupCode || req.body.code,
-        { source: 'debug' }
+        { source: resolveRequestSource(req) }
       );
 
       res.json({
@@ -89,34 +92,9 @@ function createParcelController(service) {
       });
     },
 
-    async verifyHardwarePickup(req, res) {
-      const result = await service.verifyAndOpenByPickupCode(
-        req.body.pickupCode || req.body.code,
-        { source: 'hardware' }
-      );
-
-      res.json({
-        message: messages.hardwareVerifyOk,
-        data: result
-      });
-    },
-
     async confirmPickup(req, res) {
       const result = await service.confirmPickupByPickupCode(
-        req.body.pickupCode || req.body.code,
-        { source: 'miniapp' }
-      );
-
-      res.json({
-        message: messages.pickupConfirmOk,
-        data: result
-      });
-    },
-
-    async confirmHardwarePickup(req, res) {
-      const result = await service.confirmPickupByPickupCode(
-        req.body.pickupCode || req.body.code,
-        { source: 'hardware' }
+        req.body.pickupCode || req.body.code
       );
 
       res.json({

@@ -79,7 +79,6 @@ const messages = {
   storeConfirmOk: '存件确认成功，订单已进入待取件状态。',
   takeOk: '已查询到待取件订单，请在柜体上输入取件码。',
   verifyOk: '取件码校验成功，柜门已打开，订单已更新为已取件。',
-  hardwareVerifyOk: '硬件校验成功，已返回开锁指令并完成取件。',
   pickupConfirmOk: '订单当前状态已是已取件。',
   serverError: '服务器内部错误，请稍后重试。'
 };

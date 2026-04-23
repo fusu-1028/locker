@@ -71,7 +71,7 @@ const maskPhone = phone => {
 const formatCabinetStatus = status => {
   const textMap = {
     idle: '空闲',
-    pending_store: '待确认存件',
+    pending_store: '待完成存件',
     pending_pickup: '待取件',
     fault: '故障'
   }
@@ -81,7 +81,7 @@ const formatCabinetStatus = status => {
 
 const formatOrderStatusText = status => {
   const textMap = {
-    1: '待确认存件',
+    1: '待完成存件',
     2: '待取件',
     3: '已取件'
   }
@@ -92,9 +92,9 @@ const formatOrderStatusText = status => {
 const formatActionText = action => {
   const textMap = {
     CREATE: '创建订单',
-    CONFIRM: '确认存件',
-    OPEN: '开锁取件',
-    FAIL: '校验失败'
+    CONFIRM: '存件完成',
+    OPEN: '取件完成',
+    FAIL: '处理失败'
   }
 
   return textMap[action] || action || '--'
@@ -102,14 +102,14 @@ const formatActionText = action => {
 
 const formatSourceText = source => {
   if (source === 'hardware') {
-    return '硬件上报'
+    return '柜机设备'
   }
 
   if (source === 'debug') {
-    return '调试模拟'
+    return '系统处理'
   }
 
-  return '微信小程序'
+  return '小程序'
 }
 
 module.exports = {

@@ -43,7 +43,8 @@
 
 ```json
 {
-  "pickupCode": "123456"
+  "pickupCode": "123456",
+  "source": "miniapp"
 }
 ```
 
@@ -58,19 +59,23 @@
 }
 ```
 
-- `POST /api/hardware/verify-pickup`
+- `POST /api/parcels/verify-pickup`
   - body:
 
 ```json
 {
-  "pickupCode": "123456"
+  "pickupCode": "123456",
+  "source": "hardware"
 }
 ```
+
+- 兼容说明：
+  旧的 `/api/hardware/*` 路径仍可访问，但正式联调与后续前后端对接统一使用 `/api/parcels/*`。
 
 ## 4. 硬件说明
 
 - STM32 通过 TTP229 输入 6 位取件码。
-- ESP8266 联网后调用 `/api/hardware/verify-pickup`。
+- ESP8266 联网后调用 `/api/parcels/verify-pickup`。
 - 后端校验成功后返回 `openDoor: true` 与 `durationMs`。
 - 当前固件已改为“验码成功即视为取件完成”，不再额外等待取件确认。
 

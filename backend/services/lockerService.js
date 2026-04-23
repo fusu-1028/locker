@@ -399,6 +399,7 @@ function createLockerService() {
           cabinetStatus: 'pending_store',
           openDoor: true,
           nextAction: 'confirm_store',
+          confirmEndpoint: '/api/parcels/store/confirm',
           instruction: '订单已创建，请放入快递后按确认键完成存件。',
           ...buildOpenCommand()
         };
@@ -470,15 +471,16 @@ function createLockerService() {
         throw new AppError(409, messages.cabinetNotReadyForPickup);
       }
 
-      return {
-        ...order,
-        cabinetCode: locker.cabinetCode,
-        cabinetNo: locker.cabinetCode,
-        cabinetStatus: 'pending_pickup',
-        pickupStage: 'keyboard_verification',
-        instruction: '请前往柜体输入 6 位取件码，校验成功后即可开锁取件。',
-        hardwareEndpoint: '/api/hardware/verify-pickup'
-      };
+        return {
+          ...order,
+          cabinetCode: locker.cabinetCode,
+          cabinetNo: locker.cabinetCode,
+          cabinetStatus: 'pending_pickup',
+          pickupStage: 'keyboard_verification',
+          instruction: '请前往柜体输入 6 位取件码，校验成功后即可开锁取件。',
+          verifyEndpoint: '/api/parcels/verify-pickup',
+          hardwareEndpoint: '/api/parcels/verify-pickup'
+        };
     },
 
     async verifyAndOpenByPickupCode(codeInput, options = {}) {

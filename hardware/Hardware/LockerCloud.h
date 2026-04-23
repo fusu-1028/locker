@@ -8,15 +8,16 @@
  * Current deployment:
  * 1. Connect STM32 + ESP8266 to the phone hotspot below.
  * 2. Access the backend through the public IP on port 3000.
+ * 3. Hardware and miniapp now share the same /api/parcels/* endpoints.
  */
 #define LOCKER_WIFI_SSID                    "moon"
 #define LOCKER_WIFI_PASSWORD                "12345678"
 
 #define LOCKER_SERVER_HOST                  "47.239.169.253"
 #define LOCKER_SERVER_PORT                  3000U
-#define LOCKER_VERIFY_PICKUP_PATH           "/api/hardware/verify-pickup"
-#define LOCKER_CONFIRM_PICKUP_PATH          "/api/hardware/pickup/confirm"
-#define LOCKER_CONFIRM_STORE_PATH           "/api/hardware/store/confirm"
+#define LOCKER_VERIFY_PICKUP_PATH           "/api/parcels/verify-pickup"
+#define LOCKER_CONFIRM_PICKUP_PATH          "/api/parcels/pickup/confirm"
+#define LOCKER_CONFIRM_STORE_PATH           "/api/parcels/store/confirm"
 #define LOCKER_PICKUP_CODE_LENGTH           6U
 
 void LockerCloud_Init(void);

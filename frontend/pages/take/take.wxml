@@ -1,23 +1,22 @@
 <view class="page-shell">
   <view class="hero-card">
-    <text class="eyebrow">PICKUP FLOW</text>
+    <text class="eyebrow">取件服务</text>
     <text class="hero-title">手机号取件</text>
-    <text class="hero-subtitle">用户先输入手机号查询待取件记录，再到柜体 TTP229 键盘输入 6 位取件码，STM32 上传校验后触发开锁。</text>
+    <text class="hero-subtitle">请先查询待取件订单，再前往柜机输入取件码完成取件。</text>
     <view class="hero-meta">
-      <text>接口地址：{{apiBaseUrl}}</text>
-      <text>当前页面保留硬件联调模拟入口</text>
+      <text>取件码仅用于本人取件，请妥善保管</text>
     </view>
   </view>
 
   <view wx:if="{{errorMessage}}" class="notice-card error">
-    <text class="notice-title">取件流程未完成</text>
+    <text class="notice-title">暂时无法完成取件</text>
     <text class="notice-body">{{errorMessage}}</text>
   </view>
 
   <view class="input-card">
     <view class="section-head">
-      <text class="section-title">先查待取件信息</text>
-      <text class="section-subtitle">按手机号查询数据库中是否存在待取件记录</text>
+      <text class="section-title">查询待取件信息</text>
+      <text class="section-subtitle">按手机号查询待取件订单</text>
     </view>
 
     <text class="input-label">预留手机号</text>
@@ -29,18 +28,17 @@
       value="{{phone}}"
       bindinput="handlePhoneInput"
     />
-    <text class="helper-text">真实流程里用户不会在手机上输入取件码，取件码应在 STM32 外接的 TTP229 键盘上输入。</text>
+    <text class="helper-text">查询到订单后，请前往柜机输入 6 位取件码完成取件。</text>
 
     <view class="btn-stack take-actions">
-      <button class="ghost-btn" bindtap="fillDemoPhone">填入示例号码</button>
       <button class="primary-btn" bindtap="submitLookup" loading="{{lookupLoading}}" disabled="{{lookupLoading}}">查询待取件</button>
     </view>
   </view>
 
   <view wx:if="{{lookupResult}}" class="result-card">
     <view class="section-head">
-      <text class="section-title">待输入验证码</text>
-      <text class="section-subtitle">下一步由硬件上传取件码</text>
+      <text class="section-title">待取件信息</text>
+      <text class="section-subtitle">请前往柜机输入取件码完成取件</text>
     </view>
 
     <view class="pickup-code-panel">
@@ -53,7 +51,7 @@
       <text>{{lookupResult.maskedPhone}}</text>
     </view>
     <view class="inline-row">
-      <text>柜门编号</text>
+      <text>柜体编号</text>
       <text>{{lookupResult.cabinetNo}}</text>
     </view>
     <view class="inline-row">
@@ -63,47 +61,9 @@
 
     <text class="helper-text">{{lookupResult.instruction}}</text>
 
-    <view class="debug-card">
-      <text class="debug-title">开发联调模拟</text>
-      <text class="debug-text">如果当前还没把 STM32 和 ESP8266 完全接上，可以先点击下面按钮，模拟硬件把验证码上传到后端并触发开锁。</text>
-      <button class="secondary-btn" bindtap="simulateHardwareVerify" loading="{{verifyLoading}}" disabled="{{verifyLoading}}">模拟硬件上传验证码</button>
-    </view>
-  </view>
-
-  <view wx:if="{{verifyResult}}" class="result-card success-card">
-    <view class="section-head">
-      <text class="section-title">{{verifyResult.completed ? '取件完成' : '已开锁，待关门确认'}}</text>
-      <text class="section-subtitle">和真实柜门流程保持一致</text>
-    </view>
-
-    <view class="inline-row">
-      <text>用户手机号</text>
-      <text>{{verifyResult.maskedPhone}}</text>
-    </view>
-    <view class="inline-row">
-      <text>柜门编号</text>
-      <text>{{verifyResult.cabinetNo}}</text>
-    </view>
-    <view class="inline-row">
-      <text>本次来源</text>
-      <text>{{verifyResult.verifySource}}</text>
-    </view>
-    <view class="inline-row">
-      <text>验证码</text>
-      <text class="mono-text">{{verifyResult.pickupCode}}</text>
-    </view>
-
-    <text class="helper-text">{{verifyResult.message}}</text>
-    <text class="helper-text">{{verifyResult.relayText}}</text>
-
-    <view wx:if="{{!verifyResult.completed}}" class="btn-stack">
-      <button class="primary-btn" bindtap="confirmPickup" loading="{{confirmingPickup}}" disabled="{{confirmingPickup}}">模拟已关门，完成取件</button>
-      <button class="ghost-btn" bindtap="goRecordsPage">查看操作记录</button>
-    </view>
-
-    <view wx:else class="btn-stack">
-      <button class="primary-btn" bindtap="resetFlow">继续下一次联调</button>
-      <button class="ghost-btn" bindtap="goRecordsPage">查看操作记录</button>
+    <view class="btn-stack">
+      <button class="primary-btn" bindtap="resetFlow">查询其他手机号</button>
+      <button class="ghost-btn" bindtap="goHome">返回首页</button>
     </view>
   </view>
 </view>

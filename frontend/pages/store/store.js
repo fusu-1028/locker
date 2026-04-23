@@ -19,8 +19,8 @@ function decorateCabinet(cabinet) {
     statusClass: getCabinetClass(status),
     parcel: order ? {
       maskedPhone: order.maskedPhone || util.maskPhone(order.phone),
-      pickupCode: order.pickupCode,
-      statusText: order.statusText || util.formatOrderStatusText(order.status),
+      pickupCode: order.pickupCode || '--',
+      statusText: util.formatOrderStatusText(order.status),
       createdAtText: util.formatServerTime(order.createTime || order.createdAt)
     } : null
   }
@@ -30,15 +30,15 @@ function decorateStoreResult(payload) {
   return {
     phone: payload.phone,
     maskedPhone: payload.maskedPhone || util.maskPhone(payload.phone),
-    pickupCode: payload.pickupCode,
+    pickupCode: payload.pickupCode || '--',
     cabinetNo: payload.cabinetCode || payload.cabinetNo || 'CAB001',
     createdAtText: util.formatServerTime(payload.createTime || payload.createdAt),
-    instruction: payload.instruction,
+    instruction: payload.instruction || '请放入物品并关闭柜门，完成本次存件。',
     relayText: payload.relayCommand
-      ? `开锁脉冲：${payload.relayCommand.durationMs}ms`
-      : '等待硬件执行开锁',
+      ? '柜门已打开，请放入物品后关闭柜门。'
+      : '请按页面提示完成后续操作。',
     confirmed: false,
-    statusText: payload.statusText || util.formatOrderStatusText(payload.status || 1)
+    statusText: util.formatOrderStatusText(payload.status || 1)
   }
 }
 
@@ -50,8 +50,7 @@ Page({
     loadingCabinet: true,
     errorMessage: '',
     cabinet: decorateCabinet({}),
-    result: null,
-    apiBaseUrl: api.getBaseUrl()
+    result: null
   },
 
   onShow() {
@@ -68,16 +67,9 @@ Page({
     })
   },
 
-  fillDemoPhone() {
-    this.setData({
-      phone: '13800138000'
-    })
-  },
-
   async loadCabinet(fromPullDown) {
     this.setData({
-      loadingCabinet: true,
-      apiBaseUrl: api.getBaseUrl()
+      loadingCabinet: true
     })
 
     try {
@@ -88,7 +80,7 @@ Page({
       })
     } catch (error) {
       this.setData({
-        errorMessage: error.message || '柜体状态加载失败。'
+        errorMessage: error.message || '柜体状态获取失败，请稍后重试。'
       })
     } finally {
       this.setData({ loadingCabinet: false })
@@ -104,7 +96,7 @@ Page({
 
     if (!/^1[3-9]\d{9}$/.test(phone)) {
       wx.showToast({
-        title: '请输入正确手机号',
+        title: '请输入正确的手机号',
         icon: 'none'
       })
       return
@@ -138,8 +130,8 @@ Page({
       })
 
       wx.showModal({
-        title: '订单已创建',
-        content: '系统已生成取件码。请放入快递后，再通过柜体确认键完成存件。',
+        title: '存件申请已提交',
+        content: '系统已生成取件码并已开启柜门，请放入物品后关闭柜门。',
         showCancel: false
       })
     } catch (error) {
@@ -148,7 +140,7 @@ Page({
       })
 
       wx.showToast({
-        title: '存件失败',
+        title: '存件失败，请重试',
         icon: 'none'
       })
     } finally {
@@ -171,14 +163,14 @@ Page({
     })
 
     try {
-      await api.confirmStore(result.pickupCode, false)
+      await api.confirmStore(result.pickupCode, 'miniapp')
 
       this.setData({
         result: {
           ...result,
           confirmed: true,
           statusText: util.formatOrderStatusText(2),
-          instruction: '存件已确认，订单状态已更新为待取件。'
+          instruction: '柜门已关闭，订单已进入待取件状态。'
         },
         cabinet: {
           cabinetNo: result.cabinetNo,
@@ -195,12 +187,12 @@ Page({
       })
 
       wx.showToast({
-        title: '存件已确认',
+        title: '存件已完成',
         icon: 'success'
       })
     } catch (error) {
       this.setData({
-        errorMessage: error.message || '存件确认失败。'
+        errorMessage: error.message || '存件确认失败，请稍后重试。'
       })
     } finally {
       this.setData({
@@ -209,15 +201,15 @@ Page({
     }
   },
 
-  goTakePage() {
-    wx.navigateTo({
-      url: '/pages/take/take'
+  goHome() {
+    wx.reLaunch({
+      url: '/pages/index/index'
     })
   },
 
-  goRecordsPage() {
+  goTakePage() {
     wx.navigateTo({
-      url: '/pages/records/records'
+      url: '/pages/take/take'
     })
   }
 })

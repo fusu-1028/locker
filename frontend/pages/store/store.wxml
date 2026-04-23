@@ -1,43 +1,42 @@
 <view class="page-shell">
   <view class="hero-card">
-    <text class="eyebrow">STORE FLOW</text>
+    <text class="eyebrow">存件服务</text>
     <text class="hero-title">手机号存件</text>
-    <text class="hero-subtitle">用户提交手机号后，后端生成 6 位取件码并下发开锁指令。关门确认后，柜体进入待取件状态。</text>
+    <text class="hero-subtitle">请输入收件手机号，系统将生成取件码并引导完成存件操作。</text>
     <view class="hero-meta">
-      <text>接口地址：{{apiBaseUrl}}</text>
-      <text>当前模式：云端后端 + 单柜体联调</text>
+      <text>请先确认柜体可用后再发起存件</text>
     </view>
   </view>
 
   <view wx:if="{{errorMessage}}" class="notice-card error">
-    <text class="notice-title">存件流程未完成</text>
+    <text class="notice-title">暂时无法完成存件</text>
     <text class="notice-body">{{errorMessage}}</text>
   </view>
 
   <view class="panel-card">
     <view class="section-head">
       <text class="section-title">柜体状态</text>
-      <text class="section-subtitle">先确认柜门空闲，再发起存件</text>
+      <text class="section-subtitle">请确认柜门处于可用状态</text>
     </view>
     <view class="inline-row">
-      <text>1 号柜状态</text>
+      <text>柜体状态</text>
       <text class="chip {{cabinet.statusClass}}">{{cabinet.statusText}}</text>
     </view>
     <view wx:if="{{cabinet.parcel}}" class="inline-row">
-      <text>当前手机号</text>
+      <text>当前订单手机号</text>
       <text>{{cabinet.parcel.maskedPhone}}</text>
     </view>
     <view wx:if="{{cabinet.parcel}}" class="inline-row">
       <text>当前取件码</text>
       <text class="mono-text">{{cabinet.parcel.pickupCode}}</text>
     </view>
-    <text class="helper-text">如果这里不是“空闲待用”，说明当前柜门还有未完成流程，需要先完成后再存件。</text>
+    <text class="helper-text">如果当前柜体不是空闲状态，请先完成已有订单后再发起新的存件。</text>
   </view>
 
   <view class="input-card">
     <view class="section-head">
       <text class="section-title">填写手机号</text>
-      <text class="section-subtitle">用于后续查询待取件记录</text>
+      <text class="section-subtitle">用于生成取件码和后续查询</text>
     </view>
 
     <text class="input-label">手机号</text>
@@ -49,18 +48,17 @@
       value="{{phone}}"
       bindinput="handlePhoneInput"
     />
-    <text class="helper-text">真实部署时，这一步由小程序完成；当前页面保留“模拟关门确认”按钮，方便没有门磁时联调。</text>
+    <text class="helper-text">请准确填写收件手机号，并提醒用户妥善保管取件码。</text>
 
     <view class="btn-stack store-actions">
-      <button class="ghost-btn" bindtap="fillDemoPhone">填入示例号码</button>
       <button class="primary-btn" bindtap="submitStore" loading="{{submitting}}" disabled="{{submitting}}">提交存件</button>
     </view>
   </view>
 
   <view wx:if="{{result}}" class="result-card">
     <view class="section-head">
-      <text class="section-title">{{result.statusText}}</text>
-      <text class="section-subtitle">请提醒用户保存取件码</text>
+      <text class="section-title">{{result.confirmed ? '存件完成' : result.statusText}}</text>
+      <text class="section-subtitle">{{result.confirmed ? '您可凭取件码稍后取件' : '请妥善保存取件码'}}</text>
     </view>
 
     <view class="code-panel">
@@ -73,7 +71,7 @@
       <text>{{result.maskedPhone}}</text>
     </view>
     <view class="inline-row">
-      <text>柜门编号</text>
+      <text>柜体编号</text>
       <text>{{result.cabinetNo}}</text>
     </view>
     <view class="inline-row">
@@ -85,13 +83,13 @@
     <text class="helper-text">{{result.relayText}}</text>
 
     <view wx:if="{{!result.confirmed}}" class="btn-stack">
-      <button class="secondary-btn" bindtap="confirmStore" loading="{{confirmingStore}}" disabled="{{confirmingStore}}">模拟已关门，完成存件</button>
-      <button class="ghost-btn" bindtap="goRecordsPage">查看操作记录</button>
+      <button class="secondary-btn" bindtap="confirmStore" loading="{{confirmingStore}}" disabled="{{confirmingStore}}">确认已关闭柜门</button>
+      <button class="ghost-btn" bindtap="goHome">返回首页</button>
     </view>
 
     <view wx:else class="btn-stack">
-      <button class="primary-btn" bindtap="goTakePage">继续体验取件流程</button>
-      <button class="ghost-btn" bindtap="goRecordsPage">查看操作记录</button>
+      <button class="primary-btn" bindtap="goHome">返回首页</button>
+      <button class="ghost-btn" bindtap="goTakePage">前往取件查询</button>
     </view>
   </view>
 </view>

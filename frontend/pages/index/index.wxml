@@ -1,16 +1,16 @@
 <view class="page-shell">
   <view class="hero-card">
-    <text class="eyebrow">SMART LOCKER</text>
-    <text class="hero-title">智能快递柜联调台</text>
-    <text class="hero-subtitle">把小程序下单、云端数据库、TTP229 键盘验码和继电器开锁串成一条完整业务链路。</text>
+    <text class="eyebrow">智能快递柜服务</text>
+    <text class="hero-title">智能快递柜</text>
+    <text class="hero-subtitle">支持存件、取件查询和业务状态查看，帮助用户快速完成寄存服务。</text>
     <view class="hero-meta">
-      <text>接口地址：{{apiBaseUrl}}</text>
+      <text>请根据页面提示完成存件或取件操作</text>
       <text>最近刷新：{{refreshedAt}}</text>
     </view>
   </view>
 
   <view wx:if="{{errorMessage}}" class="notice-card error">
-    <text class="notice-title">接口连接异常</text>
+    <text class="notice-title">服务连接异常</text>
     <text class="notice-body">{{errorMessage}}</text>
   </view>
 
@@ -24,20 +24,20 @@
   <view class="panel-card">
     <view class="section-head">
       <text class="section-title">当前柜体</text>
-      <text class="section-subtitle">单柜模式，适合 STM32 + ESP8266 联调</text>
+      <text class="section-subtitle">实时展示柜门是否可用</text>
     </view>
 
     <view class="locker-banner {{cabinet.statusClass}}">
       <view class="locker-banner-head">
-        <text class="locker-no">1 号柜</text>
+        <text class="locker-no">柜体 {{cabinet.cabinetNo}}</text>
         <text class="chip {{cabinet.statusClass}}">{{cabinet.statusText}}</text>
       </view>
-      <text class="locker-desc">柜体状态会跟随后端数据库变化：存件请求后进入待关门确认，确认完成后变为待取件，取件完成后恢复空闲。</text>
+      <text class="locker-desc">空闲状态可直接发起存件；如存在待处理订单，请按提示完成当前业务。</text>
     </view>
 
     <view wx:if="{{cabinet.hasParcel}}" class="parcel-brief">
       <view class="inline-row">
-        <text>预留手机号</text>
+        <text>当前订单手机号</text>
         <text>{{cabinet.parcel.maskedPhone}}</text>
       </view>
       <view class="inline-row">
@@ -51,26 +51,26 @@
     </view>
 
     <view wx:else class="empty-state">
-      柜门当前空闲，可以直接开始体验存件流程。
+      当前柜体空闲，可以办理存件业务。
     </view>
   </view>
 
   <view class="panel-card">
     <view class="section-head">
       <text class="section-title">快捷操作</text>
-      <text class="section-subtitle">从首页直接进入主业务</text>
+      <text class="section-subtitle">请选择需要办理的业务</text>
     </view>
     <view class="btn-stack">
       <button class="primary-btn" bindtap="goStore">我要存件</button>
       <button class="secondary-btn" bindtap="goTake">我要取件</button>
-      <button class="ghost-btn" bindtap="goRecords">查看操作记录</button>
+      <button class="ghost-btn" bindtap="goRecords">查看记录</button>
     </view>
   </view>
 
   <view class="panel-card">
     <view class="section-head">
-      <text class="section-title">最近操作</text>
-      <text class="section-subtitle">便于演示状态流转</text>
+      <text class="section-title">最近记录</text>
+      <text class="section-subtitle">查看近期业务状态</text>
     </view>
 
     <view wx:if="{{recentRecords.length}}">
@@ -79,20 +79,20 @@
           <text class="chip {{item.actionClass}}">{{item.actionText}}</text>
           <text class="activity-time">{{item.createdAtText}}</text>
         </view>
-        <text class="activity-main">{{item.maskedPhone}} · 柜门 {{item.cabinetNo}} · 验证码 {{item.pickupCode}}</text>
+        <text class="activity-main">{{item.maskedPhone}} · 柜体 {{item.cabinetNo}} · 取件码 {{item.pickupCode}}</text>
         <text class="activity-note">{{item.note}}</text>
       </view>
     </view>
 
     <view wx:else class="empty-state">
-      还没有业务流水。可以先去存件，再体验一次取件流程。
+      暂无业务记录，可先办理存件或取件。
     </view>
   </view>
 
   <view class="panel-card">
     <view class="section-head">
-      <text class="section-title">业务流程</text>
-      <text class="section-subtitle">适合答辩时逐步讲解</text>
+      <text class="section-title">使用说明</text>
+      <text class="section-subtitle">办理业务前请先了解流程</text>
     </view>
     <view wx:for="{{flowSteps}}" wx:key="*this" class="flow-item">
       <text class="flow-index">{{index + 1}}</text>
